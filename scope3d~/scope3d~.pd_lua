@@ -153,7 +153,7 @@ function scope3d:paint(g)
   end
 
   g:set_color(table.unpack(self.FGCOLOR))
-  local p = path.start(self:projectVertex(self.rotatedSignal[1], self.ZOOM))
+  local p = Path(self:projectVertex(self.rotatedSignal[1], self.ZOOM))
   for i = 2, self.BUFFERSIZE do
     p:line_to(self:projectVertex(self.rotatedSignal[i], self.ZOOM))
   end
