@@ -1,4 +1,4 @@
-#N struct 1020-point float x0 float y0 float xs float ys float fg float in float gridx float gridy;
+#N struct 1065-point float x0 float y0 float xs float ys float fg float in float gridx float gridy;
 #N canvas 378 123 791 771 10;
 #X msg 421 251 grid \$1;
 #X obj 421 230 tgl 16 1 empty empty empty 0 -10 0 12 #fcfcfc #000000 #000000 1 1;
