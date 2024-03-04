@@ -5,8 +5,9 @@ function scope3d:initialize(sel, atoms)
   self.methods =
   {
     -- methods for use from messages or creation flags, state start index and #values
-    -- message option that allow variable arg count should (like rotate) need to be 
-    -- listed after the other option for correct state restoring 
+    --
+    -- methods that allow variable arg count (like rotate) need to be 
+    -- listed after the other methods for correct state restoring 
     xrotate     = {function(s, a) return s:pd_xrotate(a)     end, 1, 1},
     yrotate     = {function(s, a) return s:pd_yrotate(a)     end, 2, 1},
     rotate      = {function(s, a) return s:pd_rotate(a)      end, 1, 2},
