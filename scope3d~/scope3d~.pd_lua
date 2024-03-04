@@ -274,12 +274,14 @@ end
 function scope3d:pd_xrotate(x)
   if type(x[1]) == "number" then
     self.rotationAngleX = -x[1]
+    self.rotationStartAngleX = self.rotationAngleX
   end
 end
 
 function scope3d:pd_yrotate(x)
   if type(x[1]) == "number" then
     self.rotationAngleY = x[1]
+    self.rotationStartAngleY = self.rotationAngleY
   end
 end
 
@@ -287,7 +289,8 @@ function scope3d:pd_rotate(x)
   if #x == 2 and
      type(x[1]) == "number" and
      type(x[2]) == "number" then
-    self.rotationAngleX, self.rotationAngleY = x[1], x[2]
+    self.rotationAngleX, self.rotationAngleY = -x[1], x[2]
+    self.rotationStartAngleX, self.rotationStartAngleY = self.rotationAngleX, self.rotationAngleY
   end
 end
 
