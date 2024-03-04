@@ -1,22 +1,137 @@
 local scope3d = pd.Class:new():register("scope3d~")
 
 function scope3d:initialize(sel, atoms)
-  self.inlets = {SIGNAL, SIGNAL, SIGNAL, DATA}
-  self:reset()
-  self.cameraDistance = 6
-  self.gridLines = self:create_grid(-1, 1, 0.25)
+  self.inlets = {SIGNAL, SIGNAL, SIGNAL}
+  self.methods =
+  {
+    -- methods for use from messages or creation flags, state start index and #values
+    --
+    -- methods that allow variable arg count (like rotate) need to be 
+    -- listed after the other methods for correct state restoring 
+    xrotate     = {function(s, a) return s:pd_xrotate(a)     end, 1, 1},
+    yrotate     = {function(s, a) return s:pd_yrotate(a)     end, 2, 1},
+    rotate      = {function(s, a) return s:pd_rotate(a)      end, 1, 2},
 
-  self.WIDTH, self.HEIGHT = 140, 140
-  local kwargs, _ = self:handle_args(atoms)
+    width       = {function(s, a) return s:pd_width(a)       end, 3, 1},
+    height      = {function(s, a) return s:pd_height(a)      end, 4, 1},
+    size        = {function(s, a) return s:pd_size(a)        end, 3, 2},
+
+    zoom        = {function(s, a) return s:pd_zoom(a)        end, 5, 1},
+    drag        = {function(s, a) return s:pd_drag(a)        end, 6, 1},
+    grid        = {function(s, a) return s:pd_grid(a)        end, 7, 1},
+    perspective = {function(s, a) return s:pd_perspective(a) end, 8, 1},
+    stroke      = {function(s, a) return s:pd_stroke(a)      end, 9, 1},
+
+    buffer      = {function(s, a) return s:pd_buffer(a)      end, 10, 1},
+    interval    = {function(s, a) return s:pd_interval(a)    end, 11, 1},
+    framerate   = {function(s, a) return s:pd_framerate(a)   end, 12, 1},
+
+    fgcolor     = {function(s, a) return s:pd_fgcolor(a)     end, 13, 3},
+    bgcolor     = {function(s, a) return s:pd_bgcolor(a)     end, 16, 3},
+    gridcolor   = {function(s, a) return s:pd_gridcolor(a)   end, 19, 3},
+
+    reset       = {function(s, a) return s:pd_reset()        end}
+  }
+  self:reset_state()
+  self:reset_data()
+
+  local kwargs, args = self:handle_args(atoms)
   for k, v in pairs(kwargs) do
     self:call_pd_method(k, v)
   end
-  self:set_size(self.WIDTH, self.HEIGHT)
+  self:restore_state(args)
   return true
 end
 
-function scope3d:interval_from_fps(fps)
-  return 1 / fps * 1000
+function scope3d:call_pd_method(sel, atoms)
+  local func = self.methods[sel] and self.methods[sel][1]
+  if(func) then
+    if self.methods[sel][2] then
+      for i, atom in ipairs(atoms) do
+        -- write atoms to state index
+        self.state[self.methods[sel][2] + i-1] = atom
+      end
+    end
+    self:save_state()
+    func(self, atoms)
+  end
+end
+
+function scope3d:restore_state(atoms)
+  for key, method in pairs(self.methods) do
+    if method[2] then -- if method has state index
+      local args = {}
+      for i = method[2], method[2] + method[3]-1 do
+        if type(atoms[i]) == "number" then table.insert(args, atoms[i]) end
+      end
+      if #args > 0 then self:call_pd_method(key, args) end
+    end 
+  end
+end
+
+function scope3d:save_state()
+  self:set_args(self.state)
+end
+
+function scope3d:reset_state()
+  self.state = {}
+  local count = 0
+  -- get state args count
+  local i = 1
+  for _, method in pairs(self.methods) do
+    if method[2] then
+      count = math.max(count, i + method[3])
+    end
+    i = i + 1
+  end
+  -- prefill state with -1
+  for i = 1, count do
+    table.insert(self.state, "empty")
+  end
+end
+
+function scope3d:reset_data()
+  self.gridLines = self:create_grid(-1, 1, 0.25)
+  self.cameraDistance = 6
+  self.bufferIndex = 1
+  self.sampleIndex = 1
+  self.rotationAngleX, self.rotationAngleY = 0, 0
+  self.rotationStartAngleX, self.rotationStartAngleY = 0, 0
+
+  self.FGCOLOR = {Colors.foreground}
+  self.BGCOLOR = {Colors.background}
+
+  self.WIDTH, self.HEIGHT = 140, 140
+  self.FRAMEINTERVAL = 1 / 50 * 1000
+  self.BUFFERSIZE = 512
+  self.SAMPLING_INTERVAL = 8
+  self.DRAW_GRID = 1
+  self.DRAG = 1
+  self.STROKE_WIDTH = 1
+  self.ZOOM = 1
+  self.GRIDCOLOR = {192, 192, 192}
+  self.PERSPECTIVE = 1
+  self:set_size(self.WIDTH, self.HEIGHT)
+  self:reset_buffer()
+end
+
+function scope3d:reset_buffer()
+  self.signal = {}
+  self.rotatedSignal = {}
+  -- prefill ring buffer
+  for i = 1, self.BUFFERSIZE do 
+    self.signal[i] = {0, 0, 0}
+    self.rotatedSignal[i] = {0, 0, 0}
+  end
+end
+
+function scope3d:postinitialize()
+  self.clock = pd.Clock:new():register(self, "tick")
+  self.clock:delay(self.FRAMEINTERVAL)
+end
+
+function scope3d:finalize()
+  self.clock:destruct()
 end
 
 function scope3d:handle_args(atoms)
@@ -37,44 +152,6 @@ function scope3d:handle_args(atoms)
     end
   end
   return kwargs, args
-end
-
-function scope3d:reset()
-  self.FRAMEINTERVAL = self:interval_from_fps(50)
-  self.BUFFERSIZE = 512
-  self.bufferIndex = 1
-  self.sampleIndex = 1
-  self:reset_buffer()
-  self.SAMPLING_INTERVAL = 8
-  self.DRAW_GRID = 1
-  self.DRAG = 1
-  self.STROKE_WIDTH = 1
-  self.ZOOM = 1
-  self.FGCOLOR = {Colors.foreground}
-  self.BGCOLOR = {Colors.background}
-  self.GRIDCOLOR = {192, 192, 192}
-  self.PERSPECTIVE = 1
-  self.rotationAngleX, self.rotationAngleY = 0, 0
-  self.rotationStartAngleX, self.rotationStartAngleY = 0, 0
-end
-
-function scope3d:reset_buffer()
-  self.signal = {}
-  self.rotatedSignal = {}
-  -- prefill ring buffer
-  for i = 1, self.BUFFERSIZE do 
-    self.signal[i] = {0, 0, 0}
-    self.rotatedSignal[i] = {0, 0, 0}
-  end
-end
-
-function scope3d:postinitialize()
-  self.clock = pd.Clock:new():register(self, "tick")
-  self.clock:delay(self.FRAMEINTERVAL)
-end
-
-function scope3d:finalize()
-  self.clock:destruct()
 end
 
 function scope3d:tick()
@@ -190,48 +267,19 @@ function scope3d:in_n(n, sel, atoms)
   self:call_pd_method(sel, atoms)
 end
 
-function scope3d:call_pd_method(sel, atoms)
-  local methods =
-  {
-    rotate      = function(s, a) return s:pd_rotate(a)      end,
-    xrotate     = function(s, a) return s:pd_xrotate(a)     end,
-    yrotate     = function(s, a) return s:pd_yrotate(a)     end,
-
-    size        = function(s, a) return s:pd_size(a)        end,
-    width       = function(s, a) return s:pd_width(a)       end,
-    height      = function(s, a) return s:pd_height(a)      end,
-
-    zoom        = function(s, a) return s:pd_zoom(a)        end,
-    drag        = function(s, a) return s:pd_drag(a)        end,
-    grid        = function(s, a) return s:pd_grid(a)        end,
-    perspective = function(s, a) return s:pd_perspective(a) end,
-    stroke      = function(s, a) return s:pd_stroke(a)      end,
-
-    buffer      = function(s, a) return s:pd_buffer(a)      end,
-    interval    = function(s, a) return s:pd_interval(a)    end,
-    framerate   = function(s, a) return s:pd_framerate(a)   end,
-
-    fgcolor     = function(s, a) return s:pd_fgcolor(a)     end,
-    bgcolor     = function(s, a) return s:pd_bgcolor(a)     end,
-    gridcolor   = function(s, a) return s:pd_gridcolor(a)   end,
-
-    reset       = function(s, a) return s:reset(a)          end
-  }
-  local func = methods[sel]
-  if(func) then
-    func(self, atoms)
-  end
-end
+-- /////////////////////////////////////////////////////////////
 
 function scope3d:pd_xrotate(x)
   if type(x[1]) == "number" then
     self.rotationAngleX = -x[1]
+    self.rotationStartAngleX = self.rotationAngleX
   end
 end
 
 function scope3d:pd_yrotate(x)
   if type(x[1]) == "number" then
     self.rotationAngleY = x[1]
+    self.rotationStartAngleY = self.rotationAngleY
   end
 end
 
@@ -239,7 +287,8 @@ function scope3d:pd_rotate(x)
   if #x == 2 and
      type(x[1]) == "number" and
      type(x[2]) == "number" then
-    self.rotationAngleX, self.rotationAngleY = x[1], x[2]
+    self.rotationAngleX, self.rotationAngleY = -x[1], x[2]
+    self.rotationStartAngleX, self.rotationStartAngleY = self.rotationAngleX, self.rotationAngleY
   end
 end
 
@@ -305,7 +354,7 @@ end
 
 function scope3d:pd_framerate(x)
   if type(x[1]) == "number" then
-    self.FRAMEINTERVAL = self:interval_from_fps(math.min(120, math.max(1, x[1])))
+    self.FRAMEINTERVAL = 1 / math.min(120, math.max(1, x[1])) * 1000
   end
 end
 
@@ -337,4 +386,10 @@ function scope3d:pd_gridcolor(x)
      type(x[3]) == "number" then
     self.GRIDCOLOR = {x[1], x[2], x[3]}
   end
+end
+
+function scope3d:pd_reset()
+  self:reset_data()
+  self:reset_state()
+  self:save_state()
 end
