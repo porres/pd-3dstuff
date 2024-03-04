@@ -36,13 +36,10 @@ function scope3d:initialize(sel, atoms)
   self:reset_data()
 
   local kwargs, args = self:handle_args(atoms)
-  if #args > 0 then
-    self:restore_state(args)
-  else
-    for k, v in pairs(kwargs) do
-      self:call_pd_method(k, v)
-    end
+  for k, v in pairs(kwargs) do
+    self:call_pd_method(k, v)
   end
+  self:restore_state(args)
   return true
 end
 
