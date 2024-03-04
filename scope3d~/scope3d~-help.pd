@@ -1,5 +1,5 @@
 #N struct 1020-point float x0 float y0 float xs float ys float fg float in float gridx float gridy;
-#N canvas 378 123 822 823 10;
+#N canvas 378 123 791 771 10;
 #X msg 421 251 grid \$1;
 #X obj 421 230 tgl 16 1 empty empty empty 0 -10 0 12 #fcfcfc #000000 #000000 1 1;
 #X obj 60 347 hsl 136 16 0.1 10 1 0 empty empty empty -2 -10 0 12 #fcfcfc #000000 #000000 0 1;
@@ -54,7 +54,7 @@
 #X text 85 687 [scope3d~ -size 200 -xrotate 20 -yrotate 20 -zoom 1.2];
 #X text 79 714 all messages can be set as argument with additional "-";
 #X msg 239 344 yrotate \$1;
-#X obj 421 405 scope3d~ empty empty 200 200 empty 1 1 empty empty empty empty empty empty empty empty empty empty empty empty;
+#X obj 421 405 scope3d~ -size 200 -xrotate 20 -yrotate 20 -zoom 1.2;
 #X connect 0 0 54 0;
 #X connect 1 0 0 0;
 #X connect 2 0 3 0;
