@@ -70,7 +70,6 @@ function scope3d:restore_state(atoms)
 end
 
 function scope3d:save_state()
-  pd.post(table.concat(self.state, ' '))
   self:set_args(self.state)
 end
 
