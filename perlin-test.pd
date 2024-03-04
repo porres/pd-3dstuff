@@ -24,8 +24,8 @@
 #X restore 814 147 pd;
 #X text 52 33 perlin_3d~ applications;
 #X obj -2 412 cnv 19 1300 360 empty empty empty 20 12 0 12 #ececec #404040 0;
-#X obj 55 578 scope3d~ empty empty 140 140 empty empty empty 0 empty 240 3 empty empty empty empty empty empty empty empty;
-#X obj 236 578 scope3d~ empty empty 140 140 empty empty empty 0 empty 240 3 empty empty empty empty empty empty empty empty;
+#X obj 55 578 scope3d~ empty empty 140 140 empty empty empty 0 empty 256 3 empty empty empty empty empty empty empty empty empty;
+#X obj 236 578 scope3d~ empty empty 140 140 empty empty empty 0 empty 256 3 empty empty empty empty empty empty empty empty empty;
 #X obj 294 506 *~ 256;
 #X obj 294 482 phasor~ 0.001;
 #X obj 417 578 scope3d~ 30 30 140 140 empty empty empty empty empty 1024 2 empty empty empty empty empty empty empty empty empty;
@@ -85,10 +85,10 @@
 #X obj 417 99 tri~ 24;
 #X obj 417 506 tri~ 24;
 #X obj 598 506 tri~ 24;
-#X obj 236 171 scope3d~ empty empty 140 140 empty empty empty 0 empty 240 3 empty empty empty empty empty empty empty empty;
+#X obj 236 171 scope3d~ empty empty 140 140 empty empty empty 0 empty 256 3 empty empty empty empty empty empty empty empty empty;
 #X obj 288 147 perlin_3d~ 1;
 #X obj 814 699 declare -path scope3d~ -path perlin_3d~ -lib else -path else;
-#X obj 55 171 scope3d~ empty empty 140 140 empty empty empty 0 empty 240 3 empty empty empty empty empty empty empty empty;
+#X obj 55 171 scope3d~ empty empty 140 140 empty empty empty 0 empty 256 3 empty empty empty empty empty empty empty empty empty;
 #X connect 1 0 0 1;
 #X connect 4 0 8 1;
 #X connect 5 0 4 0;
